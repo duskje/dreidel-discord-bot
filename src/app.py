@@ -5,11 +5,12 @@ import os
 from exceptions import (
     InsufficientFundsException,
 
-    PlayerNotFoundException,
     AlreadyInGameException,
+    NoGameInProgressException,
 
     NoPlayersException,
     NotPlayersTurnException,
+    PlayerNotFoundException,
 )
 
 bot = commands.Bot(
@@ -51,7 +52,8 @@ async def roll(ctx):
 
     except NotPlayersTurnException:
         await ctx.send(f'{ ctx.author }, it\'s not your turn!')
-    # TODO: except player not in game
+    except NoGameInProgressException:
+        await ctx.send('There\'s no game in progress.')
 
 
 @bot.command(aliases=['jg'])
@@ -96,6 +98,7 @@ async def debug_logic(ctx):
         'In queue: {round}\n'
         'Playing: {active_players}'.format(**dreidel_game.__dict__)
     )
+
 
 @bot.command()
 async def debug_user(ctx):

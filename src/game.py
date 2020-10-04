@@ -42,13 +42,12 @@ class DreidelLogic:
     def roll(self, user_obj) -> str:
         roll = DreidelLogic.dreidel[ randint(0, 3) ]
 
-        if not len(self.round) or user_obj != self.ask_turn():
+        if not self.is_round_active:
+            raise NoGameInProgressException
+        elif user_obj != self.ask_turn():
             raise NotPlayersTurnException
 
-        try:
-            user = self.round.pop()
-        except IndexError:
-            raise NoPlayersException
+        user = self.round.pop()
 
         if roll == 'nun':
             pass
@@ -59,10 +58,9 @@ class DreidelLogic:
             user.session_score = (self.pot // 2) + 1
             self.pot = (self.pot // 2) - 1
         elif roll == 'shin':
-            user.session_score -= 1
-
             try:
                 self.put(user_obj, 1)
+                user.session_score -= 1
             except InsufficientFundsException:
                 raise
 
@@ -91,7 +89,13 @@ class DreidelLogic:
 #        player.bank += player.session_score
 #        player.session_score = 0
 
-    def join(self, user_obj) -> None:
+    def join(self, user_obj: 'discord.User') -> None:
+        """
+        Adds an user to the active players list and last in the round queue queue.
+
+        :param user_obj:
+        :return:
+        """
         active_players = (player.user_obj for player in self.active_players)
 
         if user_obj not in active_players:
