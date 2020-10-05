@@ -1,8 +1,8 @@
 from discord.ext import commands
-from game import DreidelLogic
+from src.game import DreidelLogic
 import os
 
-from exceptions import (
+from src.exceptions import (
     InsufficientFundsException,
 
     AlreadyInGameException,

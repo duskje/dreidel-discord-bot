@@ -1,7 +1,7 @@
 from random import randint, shuffle
 from collections import deque
 
-from exceptions import (
+from src.exceptions import (
     InsufficientFundsException,
 
     AlreadyInGameException,
@@ -34,12 +34,23 @@ class DreidelLogic:
         return len(self.round)
 
     def new_round(self) -> None:
+        """
+        Restarts the round.
+
+        :return: None
+        """
         shuffle(self.active_players)
 
         for player in self.active_players:
             self.round.append(player)
 
-    def roll(self, user_obj) -> str:
+    def roll(self, user_obj: 'discord.User') -> str:
+        """
+        Rolls a dreidel and returns the result as a lowercased string.
+
+        :param user_obj: discord.User
+        :return: str
+        """
         roll = DreidelLogic.dreidel[ randint(0, 3) ]
 
         if not self.is_round_active:
@@ -55,6 +66,7 @@ class DreidelLogic:
             user.session_score = self.pot
             self.pot = 0
         elif roll == 'hei':
+            # TODO: what if the pot is empty
             user.session_score = (self.pot // 2) + 1
             self.pot = (self.pot // 2) - 1
         elif roll == 'shin':
@@ -66,7 +78,7 @@ class DreidelLogic:
 
         return roll
 
-    def put(self, user_obj, pts: int) -> None:
+    def put(self, user_obj: 'discord.User', pts: int) -> None:
         found_player = None
 
         if not self.active_players:
@@ -83,34 +95,32 @@ class DreidelLogic:
         else:
             self.pot += pts
             found_player.bank -= pts
-#
-#    @staticmethod
-#    def take(player: 'Player') -> None:
-#        player.bank += player.session_score
-#        player.session_score = 0
 
     def join(self, user_obj: 'discord.User') -> None:
         """
-        Adds an user to the active players list and last in the round queue queue.
+        Adds an user to the active players list and adds it last in the round doubly ended queue.
 
-        :param user_obj:
-        :return:
+        :param user_obj: discord.User
+        :return: None
         """
+
         active_players = (player.user_obj for player in self.active_players)
 
         if user_obj not in active_players:
             player = Player(user_obj)
 
             ( self.active_players ).append(player)
+
+            # TODO: what if there's no round in progress?
             ( self.round ).appendleft(player)
         else:
             raise AlreadyInGameException
 
-    def leave(self, user_obj) -> None:
+    def leave(self, user_obj: 'discord.User') -> None:
         active_players = (player.user_obj for player in self.active_players)
 
         if user_obj in active_players:
-            # TODO: this looks horrible, refactor
+            # TODO: this looks horrible, refactor using the remove method
             for i, player in enumerate(self.active_players):
                 if player.user_obj == user_obj:
                     del self.active_players[i]
@@ -124,6 +134,11 @@ class DreidelLogic:
             raise PlayerNotFoundException
 
     def ask_turn(self) -> 'discord.User':
+        """
+        Peeks the last user in queue.
+
+        :return: discord.User
+        """
         try:
             player = ( self.round ).pop()
             ( self.round ).append(player)
@@ -134,7 +149,7 @@ class DreidelLogic:
 
 
 class Player:
-    def __init__(self, user_obj):
+    def __init__(self, user_obj: 'discord.User'):
         self.user_obj = user_obj
         self.session_score = 0
         self.bank = 100
@@ -148,10 +163,6 @@ class Player:
     @property
     def user_id(self):
         return self.user_obj.id
-
-    @classmethod
-    def from_id(cls, user_id: int) -> 'Player':
-        return cls(user_id)
 
     # TODO: Implement serialization
     def load_bank(self):
