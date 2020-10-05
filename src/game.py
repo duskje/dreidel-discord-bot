@@ -119,6 +119,12 @@ class DreidelLogic:
             raise AlreadyInGameException
 
     def leave(self, user_obj: 'discord.User') -> None:
+        """
+        Deletes the user from the active players list and the queue
+
+        :param user_obj: discord.User
+        :return: None
+        """
         active_players = (player.user_obj for player in self.active_players)
 
         if user_obj in active_players:
@@ -148,4 +154,3 @@ class DreidelLogic:
             return player.user_obj
         except IndexError:
             raise NoPlayersException
-
