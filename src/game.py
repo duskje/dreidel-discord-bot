@@ -35,12 +35,18 @@ class DreidelLogic:
     def is_round_active(self):
         return len(self.round)
 
+    @property
+    def is_pot_empty(self):
+        return not self.pot
+
     def new_round(self) -> None:
         """
         Restarts the round.
 
         :return: None
         """
+        self.round = deque([])
+
         shuffle(self.active_players)
 
         for player in self.active_players:
@@ -57,34 +63,40 @@ class DreidelLogic:
 
         if not self.is_round_active:
             raise NoGameInProgressException
+
         elif user_obj != self.ask_turn():
             raise NotPlayersTurnException
 
         user = self.round.pop()
 
+        # TODO: These operations are quite expensive, use the dreidel dict instead.
         if roll == 'nun':
             pass
+
         elif roll == 'gimel':
             user.session_score = self.pot
             self.pot = 0
+
         elif roll == 'hei':
-            # TODO: what if the pot is empty
-            user.session_score = (self.pot // 2) + 1
-            self.pot = (self.pot // 2) - 1
+            if self.is_pot_empty: # TODO: test this
+                user.session_score = (self.pot // 2) + 1
+                self.pot = (self.pot // 2) - 1
+
         elif roll == 'shin':
             try:
                 self.put(user_obj, 1)
                 user.session_score -= 1
+
             except InsufficientFundsException:
                 raise
 
         return roll
 
     def put(self, user_obj: 'discord.User', pts: int) -> None:
-        found_player = None
-
         if not self.active_players:
             raise NoPlayersException
+
+        found_player = None
 
         for i, player in enumerate(self.active_players):
             if user_obj == player.user_obj:
@@ -92,8 +104,10 @@ class DreidelLogic:
 
         if found_player is None:
             raise PlayerNotFoundException
+
         elif found_player.bank < pts:
             raise InsufficientFundsException
+
         else:
             self.pot += pts
             found_player.bank -= pts
@@ -105,7 +119,6 @@ class DreidelLogic:
         :param user_obj: discord.User
         :return: None
         """
-
         active_players = (player.user_obj for player in self.active_players)
 
         if user_obj not in active_players:
@@ -114,7 +127,10 @@ class DreidelLogic:
             ( self.active_players ).append(player)
 
             # TODO: what if there's no round in progress?
-            ( self.round ).appendleft(player)
+            # TODO: test this too
+            # Add player to the round queue only if there's a round in progress
+            if self.is_round_active:
+                ( self.round ).appendleft(player)
         else:
             raise AlreadyInGameException
 
